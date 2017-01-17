@@ -1,0 +1,80 @@
+box: node:argon
+
+build:
+  services:
+     name: membersrvc
+     id: hyperledger/fabric-membersrvc:latest
+     cmd: cp ./membersrvc/membersrvc.yaml .
+     #This will be listening on port 7054
+     ports:
+       - "7054"
+
+     name: vp0
+     id: hyperledger/fabric-peer:latest
+     cmd: sh -c 'while ! nc membersrvc 7054; do sleep 1; done; peer node start'
+     links:
+       membersrvc
+     ports:
+       - "7050"
+       - "7051"
+       - "7052"
+       - "7053"
+
+
+  # The steps that will be executed on build
+  steps:
+    - script:
+        name: echo nodejs information
+        code: |
+          set -x
+          export CORE_PEER_ADDRESSAUTODETECT=true
+          export CORE_VM_ENDPOINT="unix:///var/run/docker.sock"
+          export  CORE_LOGGING_LEVEL="DEBUG"
+          export  CORE_PEER_ID="vp0"
+          export  CORE_PEER_PKI_ECA_PADDR="membersrvc:7054"
+          export  CORE_PEER_PKI_TCA_PADDR="membersrvc:7054"
+          export  CORE_PEER_PKI_TLSCA_PADDR="membersrvc:7054"
+          export  CORE_SECURITY_ENABLED=true
+          export  CORE_SECURITY_ENROLLID="test_vp0"
+          export  CORE_SECURITY_ENROLLSECRET="MwYpmSRjupbT"
+          apt-get -y update && apt-get -y install netcat
+          mkdir -p /usr/src/app
+          cd /usr/src/app
+          npm install -g npm
+          cp package.json /usr/src/app
+          npm install
+          cp * /usr/src/app
+          sh ./Scripts/docker-startup.sh
+        ports: "8080"
+
+push-to-bluemix:
+  steps:
+    - script:
+        name: Initialize jq and cf
+        code: |
+          cd /
+          wget -O cf.tgz https://cli.run.pivotal.io/stable?release=linux64-binary && tar -xvf cf.tgz && rm cf.tgz
+          wget -O jq http://stedolan.github.io/jq/download/linux64/jq
+          chmod +x cf jq
+          set -x
+          ./cf login -a $CF_API -u $CF_USER -p $CF_PASS -o $CF_ORG -s $CF_SPACE
+          BASETOKEN=$(./jq -r '.AccessToken' ~/.cf/config.json | cut -d ' ' -f 2)
+          SPACE=$(./jq -r '.OrganizationFields.GUID' ~/.cf/config.json)
+          export TOKEN="$BASETOKEN|$SPACE"
+          echo $TOKEN
+    - internal/docker-push:
+        registry: https://registry.eu-gb.bluemix.net/v2
+        repository: registry.eu-gb.bluemix.net/aie_london/$CF_CONTAINER
+        username: bearer
+        password: $TOKEN
+        ports: $CF_PORTS
+        #cmd: /bin/bash -c "cd /pipeline/source && python app.py"
+        cmd: $LAUNCH_CMD
+
+dev:
+    box: casey232/cf-bluemix-ci
+    steps:
+      - script:
+         name: Test Bluemix
+         code: /bluemix.sh
+         setMessage: "This is a test message"
