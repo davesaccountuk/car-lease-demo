@@ -1,6 +1,6 @@
 box: node:argon
 
-build:
+fred:
   services:
      name: membersrvc
      id: hyperledger/fabric-membersrvc:latest
@@ -8,7 +8,6 @@ build:
      #This will be listening on port 7054
      ports:
        - "7054"
-
      name: vp0
      id: hyperledger/fabric-peer:latest
      cmd: sh -c 'while ! nc membersrvc 7054; do sleep 1; done; peer node start'
@@ -19,8 +18,6 @@ build:
        - "7051"
        - "7052"
        - "7053"
-
-
   # The steps that will be executed on build
   steps:
     - script:
