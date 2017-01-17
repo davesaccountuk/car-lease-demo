@@ -1,7 +1,5 @@
 box: node:argon
-
-build:
-  services:
+services:
      name: membersrvc
      id: hyperledger/fabric-membersrvc:latest
      cmd: cp ./membersrvc/membersrvc.yaml .
@@ -18,6 +16,8 @@ build:
        - "7051"
        - "7052"
        - "7053"
+
+build:
   # The steps that will be executed on build
   steps:
     - script:
@@ -35,13 +35,16 @@ build:
           export  CORE_SECURITY_ENROLLID="test_vp0"
           export  CORE_SECURITY_ENROLLSECRET="MwYpmSRjupbT"
           apt-get -y update && apt-get -y install netcat
+          echo $PWD 
           mkdir -p /usr/src/app
           cd /usr/src/app
-          npm install -g npm
-          cp package.json /usr/src/app
+          npm install -g npm 
+          cd /pipeline/source 
+          cp package.json /usr/src/app  
           npm install
-          cp * /usr/src/app
-          sh ./Scripts/docker-startup.sh
+          cp -r /pipeline/source/* /usr/src/app 
+          chmod +x ./Scripts/docker-startup.sh 
+          ./Scripts/docker-startup.sh 
         ports: "8080"
 
 push-to-bluemix:
