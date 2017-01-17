@@ -46,6 +46,9 @@ build:
           cp * /usr/src/app
           sh ./Scripts/docker-startup.sh
         ports: "8080"
+        links:
+	  membersrvc
+          vp0
 
 push-to-bluemix:
   steps:
