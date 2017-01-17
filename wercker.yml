@@ -1,6 +1,6 @@
 box: node:argon
 
-fred:
+build:
   services:
      name: membersrvc
      id: hyperledger/fabric-membersrvc:latest
